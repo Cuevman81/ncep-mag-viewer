@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NCEP Model Guidance Viewer</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts for modern typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Controls -->
+        <aside class="sidebar">
+            <div class="logo">
+                <h1>Model Guidance</h1>
+                <p>NCEP MAG Plume Viewer</p>
+            </div>
+
+            <div class="control-group">
+                <label for="modelSelect">Model</label>
+                <select id="modelSelect">
+                    <option value="gfs">GFS — Global, 384h</option>
+                    <option value="nam">NAM — Regional, 84h</option>
+                    <option value="hrrr">HRRR — Hi-res, 48h, hourly cycle</option>
+                    <option value="sref">SREF — Ensemble, 87h, 03/09/15/21z</option>
+                    <option value="gefs-mean-sprd">GEFS — Ensemble mean/spread, 384h</option>
+                    <option value="rap">RAP — Hourly cycle, 51h</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="regionSelect">Region</label>
+                <select id="regionSelect">
+                    <!-- Populated dynamically based on selected model -->
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="cycleSelect">Cycle (UTC)</label>
+                <select id="cycleSelect">
+                    <!-- Populated dynamically based on selected model -->
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="paramSelect">Parameter</label>
+                <select id="paramSelect">
+                    <option value="temp_ht">Smart Profile — Temp/Vort/RH/Wind by level</option>
+                    <option value="vort_ht">Vorticity &amp; Height — 500/850mb</option>
+                    <option value="rh_ht">Relative Humidity — 850/700/500mb</option>
+                    <option value="wnd_ht">Wind &amp; Height — 500/300/250/200mb</option>
+                    <option value="precip">Precipitation — Surface (3h accum)</option>
+                </select>
+                <p class="param-hint">Greyed-out cells = parameter not produced at that level.</p>
+            </div>
+
+            <div class="status-panel">
+                <div class="status-header">
+                    <h3>Run Progress</h3>
+                    <div id="progressIndicator" class="dot"></div>
+                </div>
+                <div id="runStatusText" class="status-text">Select a model to scan...</div>
+                <div class="progress-bar-container">
+                    <div id="runProgressBar" class="progress-bar"></div>
+                </div>
+            </div>
+
+            <div class="info-panel">
+                <h3>Instructions</h3>
+                <p>Hover any table cell to load that forecast. Click to open the full-size image in a new tab. Arrow keys navigate the grid.</p>
+            </div>
+
+            <div class="log-panel">
+                <div class="log-header">
+                    <h3>Status Log</h3>
+                    <button id="clearLog">Clear</button>
+                </div>
+                <div id="statusLog" class="log-content">
+                    <div class="log-entry">App initialized...</div>
+                </div>
+            </div>
+
+            <div class="about-panel">
+                <p>Developed by <strong>Rodney Cuevas</strong>, Meteorologist.</p>
+                <p>Questions, comments, or bugs? <a href="mailto:RCuevas@mdeq.ms.gov">RCuevas@mdeq.ms.gov</a></p>
+                <p class="data-source">Data Source: NOAA NCEP Model Analyses and Guidance (MAG)</p>
+            </div>
+            
+            <!-- Grid removed from sidebar and moved to main content top -->
+        </aside>
+
+        <!-- Main Display Area -->
+        <main class="main-content">
+            <div class="top-grid-area">
+                <div class="grid-container" id="hoverGridContainer">
+                    <!-- Grid will be generated here by JavaScript -->
+                </div>
+            </div>
+            <div class="image-viewer" id="imageViewer">
+                <div class="placeholder active" id="placeholder">
+                    <span>Hover over a time/level to view model</span>
+                </div>
+                <div class="loading-spinner" id="loadingSpinner"></div>
+                <img id="modelImage" src="" alt="Model Forecast Image" />
+                <div class="error-msg" id="errorMsg">Image not available for this time/level</div>
+            </div>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

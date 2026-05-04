@@ -1,0 +1,17 @@
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# R files (from local directory)
+.RData
+.Rhistory
+
+# IDE settings
+.vscode/
+.claude/
+.idea/
+
+# Local logs
+*.log
+node_modules/
