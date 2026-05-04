@@ -19,8 +19,8 @@ An interactive, high-performance web dashboard for visualizing NCEP Model Guidan
 
 ## 🌍 Live Demo
 
-Once deployed to GitHub Pages, you can access the viewer at:  
-`https://<your-username>.github.io/ncep-mag-viewer/`
+Access the interactive dashboard here:  
+**[https://cuevman81.github.io/ncep-mag-viewer/](https://cuevman81.github.io/ncep-mag-viewer/)**
 
 ## 👨‍🔬 Developed By
 
