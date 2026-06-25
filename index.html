@@ -55,6 +55,16 @@
                 <p class="param-hint">Greyed-out cells = parameter not produced at that level.</p>
             </div>
 
+            <div class="control-group">
+                <label for="densitySelect">Frame Density</label>
+                <select id="densitySelect">
+                    <option value="0">Full resolution (native cadence)</option>
+                    <option value="6">6-hourly</option>
+                    <option value="12">12-hourly</option>
+                </select>
+                <p class="param-hint">Coarser cadence = fewer columns, less horizontal scrolling. The final forecast hour is always kept.</p>
+            </div>
+
             <div class="status-panel">
                 <div class="status-header">
                     <h3>Run Progress</h3>
@@ -68,7 +78,7 @@
 
             <div class="info-panel">
                 <h3>Instructions</h3>
-                <p>Hover any table cell to load that forecast. Click to open the full-size image in a new tab. Arrow keys navigate the grid.</p>
+                <p>Column headers are forecast hours (e.g. 384 = +384h). Hover any cell to load that forecast; click to open the full-size image in a new tab. Arrow keys navigate the grid. Use <strong>Frame Density</strong> to thin the columns on long runs.</p>
             </div>
 
             <div class="log-panel">

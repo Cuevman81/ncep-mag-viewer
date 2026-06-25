@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
             hourBands: [{ from: 0, to: 120, step: 3 }, { from: 123, to: 240, step: 3 }, { from: 252, to: 384, step: 12 }],
             areas: ['namer', 'conus'],
             defaultArea: 'namer',
+            defaultDensity: 12, // 93 native columns is too wide; open at 12h (~33 cols) so it fits without scroll
             runDuration: 5.0 // GFS 384h takes ~5 hours to fully appear on MAG
         },
         nam: {
@@ -28,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
             hourBands: [{ from: 0, to: 84, step: 3 }],
             areas: ['namer', 'conus'],
             defaultArea: 'namer',
+            defaultDensity: 0, // 84h/3h = 29 cols, fits fine at native cadence
             runDuration: 2.5 // NAM 84h takes ~2.5 hours
         },
         hrrr: {
@@ -40,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
             defaultArea: 'conus',
             extendedCycles: ['00', '06', '12', '18'],
             shortMaxHour: 18,
+            defaultDensity: 0, // 48 hourly cols — leave native, user can thin to 6/12h
             runDuration: 1.5 // HRRR takes ~1.5 hours
         },
         sref: {
@@ -50,6 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
             hourBands: [{ from: 0, to: 87, step: 3 }],
             areas: ['namer'],
             defaultArea: 'namer',
+            defaultDensity: 0, // 87h/3h = 30 cols, fits at native cadence
             runDuration: 4.0 // SREF is slow
         },
         'gefs-mean-sprd': {
@@ -60,6 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
             hourBands: [{ from: 0, to: 180, step: 6 }, { from: 192, to: 384, step: 12 }],
             areas: ['namer', 'conus'],
             defaultArea: 'namer',
+            defaultDensity: 12, // 47 native columns out to 384h; open at 12h so it fits without scroll
             runDuration: 6.0 // GEFS is the slowest
         },
         rap: {
@@ -70,6 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
             hourBands: [{ from: 0, to: 51, step: 1 }],
             areas: ['conus', 'namer'],
             defaultArea: 'conus',
+            defaultDensity: 0, // 51 hourly cols — leave native, user can thin to 6/12h
             runDuration: 1.5
         }
     };
@@ -228,6 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const regionSelect     = document.getElementById('regionSelect');
     const cycleSelect      = document.getElementById('cycleSelect');
     const paramSelect      = document.getElementById('paramSelect');
+    const densitySelect    = document.getElementById('densitySelect');
     const statusLog        = document.getElementById('statusLog');
     const clearLogBtn      = document.getElementById('clearLog');
     const runStatusText    = document.getElementById('runStatusText');
@@ -245,10 +252,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function saveSelections() {
         try {
             localStorage.setItem('ncep_selections', JSON.stringify({
-                model:  modelSelect.value,
-                region: regionSelect.value,
-                cycle:  cycleSelect.value,
-                param:  paramSelect.value
+                model:   modelSelect.value,
+                region:  regionSelect.value,
+                cycle:   cycleSelect.value,
+                param:   paramSelect.value,
+                density: densitySelect.value
             }));
         } catch (_) {}
     }
@@ -266,6 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     refreshAreaOptions(saved.region);
     refreshCycleOptions(saved.cycle);
+    refreshDensity(saved.density);
     buildGrid();
     updateCellAvailability();
     log('Ready.');
@@ -328,6 +337,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Set the Frame Density dropdown: use a saved/preferred value if valid,
+    // otherwise fall back to the current model's defaultDensity.
+    function refreshDensity(preferred) {
+        const cfg = modelConfig[modelSelect.value];
+        const valid = ['0', '6', '12'];
+        const want = (preferred !== undefined && preferred !== null) ? String(preferred) : null;
+        densitySelect.value = (want !== null && valid.includes(want))
+            ? want
+            : String(cfg.defaultDensity || 0);
+    }
+
     // ============================================================================
     // FORECAST HOUR ENUMERATION
     // ============================================================================
@@ -342,7 +362,16 @@ document.addEventListener('DOMContentLoaded', () => {
         for (const b of bands) {
             for (let h = b.from; h <= b.to; h += b.step) hours.push(h);
         }
-        return hours;
+        // Frame Density: thin the columns to multiples of the chosen cadence,
+        // but always keep the first (0h) and the final forecast hour so the run's
+        // full reach stays visible even when the max hour isn't a clean multiple
+        // (e.g. SREF 87h, RAP 51h).
+        const density = parseInt(densitySelect.value, 10) || 0;
+        if (!density) return hours;
+        const last = hours[hours.length - 1];
+        const thinned = hours.filter(h => h % density === 0);
+        if (thinned[thinned.length - 1] !== last) thinned.push(last);
+        return thinned;
     }
     function getMaxHour() {
         const hrs = getHoursForCycle();
@@ -366,11 +395,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const thead = document.createElement('thead');
         const headerRow = document.createElement('tr');
         const corner = document.createElement('th');
-        corner.textContent = 'Level';
+        corner.textContent = 'Level \\ +Hr';
+        corner.title = 'Rows = pressure level · Columns = forecast hour';
         headerRow.appendChild(corner);
         hours.forEach(h => {
             const th = document.createElement('th');
-            th.textContent = `+${h}h`;
+            // Number-only header (e.g. "384") keeps columns narrow enough that the
+            // coarse-cadence views fit without horizontal scrolling. Full "+384h"
+            // text is preserved in the tooltip.
+            th.textContent = String(h);
+            th.title = `+${h}h forecast hour`;
             headerRow.appendChild(th);
         });
         thead.appendChild(headerRow);
@@ -502,6 +536,7 @@ document.addEventListener('DOMContentLoaded', () => {
     modelSelect.addEventListener('change', () => {
         refreshAreaOptions();
         refreshCycleOptions();
+        refreshDensity();
         buildGrid();
         updateCellAvailability();
         currentCell = null;
@@ -529,6 +564,16 @@ document.addEventListener('DOMContentLoaded', () => {
     paramSelect.addEventListener('change', () => {
         updateCellAvailability();
         if (currentCell && !currentCell.classList.contains('disabled')) loadImageForCell(currentCell);
+        saveSelections();
+    });
+    densitySelect.addEventListener('change', () => {
+        // Rebuild the grid at the new cadence. The previously-active cell's
+        // column may no longer exist, so reset the selection.
+        buildGrid();
+        updateCellAvailability();
+        currentCell = null;
+        placeholder.classList.add('active');
+        modelImage.classList.remove('loaded');
         saveSelections();
     });
 
