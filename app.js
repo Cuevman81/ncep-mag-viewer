@@ -30,7 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
             areas: ['namer', 'conus'],
             defaultArea: 'namer',
             defaultDensity: 0, // 84h/3h = 29 cols, fits fine at native cadence
-            runDuration: 2.5 // NAM 84h takes ~2.5 hours
+            runDuration: 2.5, // NAM 84h takes ~2.5 hours
+            retires: Date.UTC(2026, 9, 14, 12) // NWS SCN 26-47 (updated 2026-09-09): NAM ends 14 Oct 12Z, replaced by RRFS
         },
         hrrr: {
             label: 'HRRR',
@@ -54,7 +55,8 @@ document.addEventListener('DOMContentLoaded', () => {
             areas: ['namer'],
             defaultArea: 'namer',
             defaultDensity: 0, // 87h/3h = 30 cols, fits at native cadence
-            runDuration: 4.0 // SREF is slow
+            runDuration: 4.0, // SREF is slow
+            retires: Date.UTC(2026, 9, 14, 12) // NWS SCN 26-47: SREF ends with NAM, replaced by REFS
         },
         'gefs-mean-sprd': {
             label: 'GEFS Mean/Spread',
@@ -268,8 +270,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================================================
     // INIT
     // ============================================================================
+    // Retired models leave the menu at their cut-off, before the saved selection
+    // is restored, so a returning visitor whose saved model is gone opens on GFS.
+    // If NWS moves the date again, change `retires` in modelConfig.
+    for (const [id, cfg] of Object.entries(modelConfig)) {
+        if (cfg.retires && Date.now() >= cfg.retires) {
+            modelSelect.querySelector(`option[value="${id}"]`)?.remove();
+            delete modelConfig[id];
+        }
+    }
     const saved = loadSelections();
     if (saved.model && modelConfig[saved.model]) modelSelect.value = saved.model;
+    if (!modelConfig[modelSelect.value]) modelSelect.value = 'gfs';
     if (saved.param) paramSelect.value = saved.param;
 
     refreshAreaOptions(saved.region);
@@ -278,6 +290,7 @@ document.addEventListener('DOMContentLoaded', () => {
     buildGrid();
     updateCellAvailability();
     log('Ready.');
+    noteRetirement();
     setTimeout(checkRunProgress, 300);
 
     // ============================================================================
@@ -291,6 +304,12 @@ document.addEventListener('DOMContentLoaded', () => {
         entry.textContent = `[${t}] ${msg}`;
         statusLog.prepend(entry);
         while (statusLog.children.length > 50) statusLog.lastChild.remove();
+    }
+    function noteRetirement() {
+        const cfg = modelConfig[modelSelect.value];
+        if (!cfg || !cfg.retires) return;
+        const when = new Date(cfg.retires).toUTCString().slice(5, 11) + ' ' + String(new Date(cfg.retires).getUTCHours()).padStart(2, '0') + 'Z';
+        log(`${cfg.label} is retired by NWS on ${when} (SCN 26-47) and leaves this menu then.`);
     }
     clearLogBtn.addEventListener('click', () => {
         statusLog.innerHTML = '<div class="log-entry">Log cleared.</div>';
@@ -544,6 +563,7 @@ document.addEventListener('DOMContentLoaded', () => {
         modelImage.classList.remove('loaded');
         saveSelections();
         checkRunProgress();
+        noteRetirement();
     });
     cycleSelect.addEventListener('change', () => {
         // For HRRR the grid range depends on cycle (full vs short forecast)

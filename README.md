@@ -8,7 +8,7 @@ An interactive, high-performance web dashboard for visualizing NCEP Model Guidan
 - **Smart Profile Mode**: Automatically resolves the most scientifically relevant product for each level (e.g., MSLP/Wind at surface, Vorticity at 500mb, Jets at 300mb).
 - **Run Progress Monitoring**: Real-time background scanning of NCEP servers to detect exactly how far the current model run has progressed, including a "Smart Freshness" check to prevent viewing yesterday's stale data.
 - **Keyboard Navigation**: Use arrow keys to explore the atmosphere and time-steps with precision.
-- **Deep Model Support**: Full support for GFS, NAM, HRRR, RAP, SREF, and GEFS Mean/Spread.
+- **Deep Model Support**: Full support for GFS, NAM, HRRR, RAP, SREF, and GEFS Mean/Spread. NAM and SREF drop out of the menu automatically when NWS retires them on 14 Oct 2026 12Z (SCN 26-47).
 - **Cross-Level Consistency**: Synchronized viewing allows you to maintain the same forecast hour while switching between atmospheric parameters.
 
 ## 🛠 Tech Stack
