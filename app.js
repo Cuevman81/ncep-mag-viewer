@@ -572,6 +572,7 @@ document.addEventListener('DOMContentLoaded', () => {
         buildGrid();
         updateCellAvailability();
         currentCell = null;
+        currentLoadingUrl = null;
         placeholder.classList.add('active');
         modelImage.classList.remove('loaded');
         saveSelections();
@@ -614,6 +615,7 @@ document.addEventListener('DOMContentLoaded', () => {
         buildGrid();
         updateCellAvailability();
         currentCell = null;
+        currentLoadingUrl = null;
         placeholder.classList.add('active');
         modelImage.classList.remove('loaded');
         saveSelections();
@@ -627,6 +629,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!url) {
             errorMsg.textContent = 'Parameter not available at this level for this model.';
             errorMsg.classList.add('active');
+            currentLoadingUrl = null;
             return;
         }
         log(url.split('/').pop());
@@ -659,6 +662,7 @@ document.addEventListener('DOMContentLoaded', () => {
             errorMsg.textContent = 'Image not yet available for this hour.';
             errorMsg.classList.add('active');
             log('✗ ' + url.split('/').pop(), 'error');
+            currentLoadingUrl = null; // let a re-hover retry it
         };
     }
 
