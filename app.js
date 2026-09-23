@@ -77,6 +77,8 @@ document.addEventListener('DOMContentLoaded', () => {
             hourBands: [{ from: 0, to: 51, step: 1 }],
             areas: ['conus', 'namer'],
             defaultArea: 'conus',
+            extendedCycles: ['03', '09', '15', '21'], // NWS SCN 20-46 (RAPv5): 51h at these cycles, 21h at the rest
+            shortMaxHour: 21,
             defaultDensity: 0, // 51 hourly cols — leave native, user can thin to 6/12h
             runDuration: 1.5
         }
@@ -373,8 +375,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function getHoursForCycle() {
         const cfg = modelConfig[modelSelect.value];
         let bands = cfg.hourBands;
-        // HRRR: only 00/06/12/18z extend to 48h; other cycles only 18h
-        if (modelSelect.value === 'hrrr' && !cfg.extendedCycles.includes(cycleSelect.value)) {
+        // HRRR (48h at 00/06/12/18z, else 18h) and RAP (51h at 03/09/15/21z, else 21h):
+        // only the extended cycles run the full range
+        if (cfg.extendedCycles && !cfg.extendedCycles.includes(cycleSelect.value)) {
             bands = [{ from: 0, to: cfg.shortMaxHour, step: 1 }];
         }
         const hours = [];
@@ -566,11 +569,20 @@ document.addEventListener('DOMContentLoaded', () => {
         noteRetirement();
     });
     cycleSelect.addEventListener('change', () => {
-        // For HRRR the grid range depends on cycle (full vs short forecast)
-        if (modelSelect.value === 'hrrr') {
+        // For HRRR and RAP the grid range depends on cycle (full vs short forecast).
+        // Rebuild it, keeping the hovered cell if its hour exists in the new range.
+        if (modelConfig[modelSelect.value].extendedCycles) {
+            const was = currentCell && { level: currentCell.dataset.level, hour: currentCell.dataset.hour };
             buildGrid();
             updateCellAvailability();
-            currentCell = null;
+            currentCell = was && gridContainer.querySelector(`td[data-level="${was.level}"][data-hour="${was.hour}"]`);
+            if (currentCell) {
+                currentCell.classList.add('active');
+            } else {
+                placeholder.classList.add('active');
+                modelImage.classList.remove('loaded');
+                currentLoadingUrl = null;
+            }
         }
         if (currentCell) loadImageForCell(currentCell);
         saveSelections();
