@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
             areas: ['namer'],
             defaultArea: 'namer',
             defaultDensity: 0, // 87h/3h = 30 cols, fits at native cadence
-            runDuration: 4.0, // SREF is slow
+            runDuration: 4.5, // SREF lands in one burst ~4h20m after the cycle (MAG, Sep 2026); cut-off just after it
             retires: Date.UTC(2026, 9, 14, 12) // NWS SCN 26-47: SREF ends with NAM, replaced by REFS
         },
         'gefs-mean-sprd': {
@@ -80,7 +80,9 @@ document.addEventListener('DOMContentLoaded', () => {
             extendedCycles: ['03', '09', '15', '21'], // NWS SCN 20-46 (RAPv5): 51h at these cycles, 21h at the rest
             shortMaxHour: 21,
             defaultDensity: 0, // 51 hourly cols — leave native, user can thin to 6/12h
-            runDuration: 1.5
+            runDuration: 1.5,
+            // 00/12z reach MAG ~1h35m-1h41m after the cycle, the rest by ~1h25m (MAG, Sep 2026)
+            cycleRunDuration: { '00': 1.75, '12': 1.75 }
         }
     };
 
@@ -348,11 +350,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (cfg.cycles.includes(want)) {
             cycleSelect.value = want;
         } else {
-            // Pick the most recent cycle whose UTC hour has already passed
-            const nowH = new Date().getUTCHours();
-            let best = cfg.cycles[0];
+            // Pick the newest cycle past its cut-off (wrapping past 00Z). Before the
+            // cut-off, that cycle's folder on MAG still holds yesterday's run.
+            const now = new Date();
+            const nowH = now.getUTCHours() + now.getUTCMinutes() / 60;
+            let best = cfg.cycles[0], bestAge = Infinity;
             for (const c of cfg.cycles) {
-                if (parseInt(c, 10) <= nowH) best = c;
+                const age = (nowH - parseInt(c, 10) + 24) % 24;
+                if (age >= runDurationFor(cfg, c) && age < bestAge) { best = c; bestAge = age; }
             }
             cycleSelect.value = best;
         }
@@ -394,6 +399,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const thinned = hours.filter(h => h % density === 0);
         if (thinned[thinned.length - 1] !== last) thinned.push(last);
         return thinned;
+    }
+    // Hours after the cycle time used as the stale/complete cut-off. It has to
+    // fall after the new run's first image reaches MAG (later is the safe side).
+    function runDurationFor(cfg, cycle) {
+        return (cfg.cycleRunDuration && cfg.cycleRunDuration[cycle]) || cfg.runDuration;
     }
     function getMaxHour() {
         const hrs = getHoursForCycle();
@@ -737,7 +747,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let hoursSinceCycle = now.getUTCHours() + (now.getUTCMinutes() / 60) - cycleHr;
         if (hoursSinceCycle < 0) hoursSinceCycle += 24; 
 
-        const isSuspiciouslyComplete = hasMax && (hoursSinceCycle < cfg.runDuration);
+        const isSuspiciouslyComplete = hasMax && (hoursSinceCycle < runDurationFor(cfg, cycle));
 
         if (!has0) {
             runStatusText.textContent = `${label} not yet available`;
@@ -748,7 +758,7 @@ document.addEventListener('DOMContentLoaded', () => {
             runStatusText.textContent = `${label} — Stale / Yesterday's Data`;
             progressDot.className = 'dot offline';
             runProgressBar.style.width = '100%';
-            log(`${model.toUpperCase()} ${label}: Seeing stale 384h from yesterday`, 'error');
+            log(`${model.toUpperCase()} ${label}: still yesterday's run (out to ${maxH}h)`, 'error');
         } else if (hasMax) {
             runStatusText.textContent = `${label} — complete (out to ${maxH}h)`;
             progressDot.className = 'dot online';
