@@ -2,6 +2,10 @@
 
 An interactive, high-performance web dashboard for visualizing NCEP Model Guidance (MAG) meteorological charts. Designed for meteorologists who need fast, seamless access to forecast imagery across multiple atmospheric levels and forecast hours.
 
+![Model guidance grid with the GFS 500 mb chart at +48 h](docs/screenshot.png)
+
+*Hover over a cell in the grid to show that chart; here, the GFS 500 mb chart at +48 h.*
+
 ## 🚀 Key Features
 
 - **Interactive Hover Grid**: Navigate through hundreds of forecast hours and multiple pressure levels just by moving your mouse. No clicking required.
