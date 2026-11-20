@@ -2,12 +2,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================================================
     // MODEL CONFIGURATION
     // ----------------------------------------------------------------------------
-    // Verified against live mag.ncep.noaa.gov as of 2026-05.
+    // Verified against live mag.ncep.noaa.gov (MAG 7.1.0) on 2026-11-20.
     //   nested: GFS uses /data/{model}/{cyc}/{area}/{param}/{file}.gif
     //           others use FLAT /data/{model}/{cyc}/{file}.gif
     //   hourFmt 'HHHMM' is HRRR-only (sub-hourly graphics, hour stored as hhh + 00)
-    //   hourBands describe the actual cadence on MAG (GFS thins past 120h, GEFS past 180h)
+    //   hourBands describe the cadence the viewer uses (GEFS thins past 180h, GFS past
+    //           120h; MAG has GFS hourly to 120h but the grid keeps 3-hourly there)
     //   areas list only what MAG actually serves for that model
+    // MAG 7.1.0 (Nov 2026) removed NAM and SREF (NWS SCN 26-47); RRFS replaces NAM.
     // ============================================================================
     const modelConfig = {
         gfs: {
@@ -19,19 +21,31 @@ document.addEventListener('DOMContentLoaded', () => {
             areas: ['namer', 'conus'],
             defaultArea: 'namer',
             defaultDensity: 12, // 93 native columns is too wide; open at 12h (~33 cols) so it fits without scroll
-            runDuration: 5.0 // GFS 384h takes ~5 hours to fully appear on MAG
+            runDuration: 5.0, // GFS 384h takes ~5 hours to fully appear on MAG
+            // Past 240h GFS is 12-hourly and MAG only plots 12h/24h precip there
+            lateHourProducts: { from: 252, map: { 'precip_p03': 'precip_p12' } }
         },
-        nam: {
-            label: 'NAM',
+        aigfs: {
+            label: 'AIGFS',
             cycles: ['00', '06', '12', '18'],
             nested: false,
             hourFmt: 'HHH',
-            hourBands: [{ from: 0, to: 84, step: 3 }],
+            hourBands: [{ from: 0, to: 384, step: 6 }],
             areas: ['namer', 'conus'],
             defaultArea: 'namer',
-            defaultDensity: 0, // 84h/3h = 29 cols, fits fine at native cadence
-            runDuration: 2.5, // NAM 84h takes ~2.5 hours
-            retires: Date.UTC(2026, 9, 14, 12) // NWS SCN 26-47 (updated 2026-09-09): NAM ends 14 Oct 12Z, replaced by RRFS
+            defaultDensity: 12, // 65 native columns out to 384h; open at 12h so it fits without scroll
+            runDuration: 4.75 // 000h lands ~4h21m-4h36m after the cycle, 384h ~1h25m later (MAG, Nov 2026)
+        },
+        rrfs: {
+            label: 'RRFS',
+            cycles: ['00', '06', '12', '18'], // MAG only plots the 84h synoptic cycles
+            nested: false,
+            hourFmt: 'HHH',
+            hourBands: [{ from: 0, to: 84, step: 1 }],
+            areas: ['conus', 'us-se', 'us-sc', 'us-ne', 'us-nc', 'us-nw', 'us-sw'],
+            defaultArea: 'conus',
+            defaultDensity: 3, // 85 hourly columns; open at 3h (29 cols) like NAM used to
+            runDuration: 2.25 // 000h lands ~1h42m-2h01m after the cycle, 084h ~1h35m-1h50m later (MAG, Nov 2026)
         },
         hrrr: {
             label: 'HRRR',
@@ -39,24 +53,12 @@ document.addEventListener('DOMContentLoaded', () => {
             nested: false,
             hourFmt: 'HHHMM',
             hourBands: [{ from: 0, to: 48, step: 1 }],
-            areas: ['conus'],
+            areas: ['conus', 'us-se', 'us-sc', 'us-ne', 'us-nc', 'us-nw', 'us-sw'],
             defaultArea: 'conus',
             extendedCycles: ['00', '06', '12', '18'],
             shortMaxHour: 18,
             defaultDensity: 0, // 48 hourly cols — leave native, user can thin to 6/12h
             runDuration: 1.5 // HRRR takes ~1.5 hours
-        },
-        sref: {
-            label: 'SREF',
-            cycles: ['03', '09', '15', '21'],
-            nested: false,
-            hourFmt: 'HHH',
-            hourBands: [{ from: 0, to: 87, step: 3 }],
-            areas: ['namer'],
-            defaultArea: 'namer',
-            defaultDensity: 0, // 87h/3h = 30 cols, fits at native cadence
-            runDuration: 4.5, // SREF lands in one burst ~4h20m after the cycle (MAG, Sep 2026); cut-off just after it
-            retires: Date.UTC(2026, 9, 14, 12) // NWS SCN 26-47: SREF ends with NAM, replaced by REFS
         },
         'gefs-mean-sprd': {
             label: 'GEFS Mean/Spread',
@@ -87,8 +89,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const areaLabels = {
-        namer: 'NAMER (North America)',
-        conus: 'CONUS'
+        namer:   'NAMER (North America)',
+        conus:   'CONUS',
+        'us-se': 'US Southeast',
+        'us-sc': 'US South Central',
+        'us-ne': 'US Northeast',
+        'us-nc': 'US North Central',
+        'us-nw': 'US Northwest',
+        'us-sw': 'US Southwest'
     };
 
     const levels = [
@@ -146,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================================================
     // PER-MODEL PRODUCT OVERRIDES
     // ----------------------------------------------------------------------------
-    // Each entry maps the GFS/NAM "canonical" product name to either:
+    // Each entry maps the GFS "canonical" product name to either:
     //   - a different string  → use that product instead (file-naming differs)
     //   - null                → product not produced for this model; disable cell
     // Verified against MAG cycle-fhrs.php for each model+region.
@@ -156,11 +164,21 @@ document.addEventListener('DOMContentLoaded', () => {
             '925_rh_ht': null,
             '925_wnd_ht': null, '850_wnd_ht': null, '700_wnd_ht': null
         },
-        nam: {
+        aigfs: {
+            // AIGFS precip is 6-hourly only
+            'precip_p03': 'precip_p06',
             '925_rh_ht': null,
             '925_wnd_ht': null, '850_wnd_ht': null, '700_wnd_ht': null
         },
+        rrfs: {
+            // RRFS precip_p03 exists only every 3rd hour; the hourly grid uses precip_p01
+            'precip_p03': 'precip_p01',
+            '925_rh_ht': null, '850_rh_ht': null, '500_rh_ht': null,
+            '925_wnd_ht': null, '850_wnd_ht': null, '700_wnd_ht': null, '500_wnd_ht': null
+        },
         hrrr: {
+            // HRRR precip is hourly only (no precip_p03)
+            'precip_p03': 'precip_p01',
             // HRRR uses _wnd, not _wnd_ht, for upper-air winds
             '300_wnd_ht': '300_wnd',
             // HRRR has no plain 925_temp_ht; closest analog is 925_temp_wnd
@@ -173,30 +191,22 @@ document.addEventListener('DOMContentLoaded', () => {
             '925_rh_ht': null, '850_rh_ht': null, '500_rh_ht': null,
             '925_wnd_ht': null, '850_wnd_ht': null, '700_wnd_ht': null, '500_wnd_ht': null
         },
-        sref: {
-            // SREF NAMER uses _temp (no _ht) for thermal upper-air
-            '850_temp_ht':           '850_temp',
-            '700_temp_ht':           '700_temp',
-            '850_temp_mslp_precip':  '850_temp',  // surface composite fallback
-            '10m_wnd_precip':        '10m_wind',
-            // SREF has no 925 anything, no RH/wind aside from 10m, only vort at 500
-            '925_temp_ht': null, '925_rh_ht': null, '925_wnd_ht': null,
-            '850_rh_ht': null, '850_wnd_ht': null, '850_vort_ht': null,
-            '700_rh_ht': null, '700_wnd_ht': null,
-            '500_temp_ht': null, '500_rh_ht': null, '500_wnd_ht': null,
-            '300_wnd_ht': null
-        },
         'gefs-mean-sprd': {
             '850_temp_ht':           '850_temp',
             '700_temp_ht':           '700_temp',
             '500_temp_ht':           '500_temp',
             '850_temp_mslp_precip':  'mslp',
             '10m_wnd_precip':        '10m_wnd',
-            // GEFS mean/spread carries no RH or wind layers above the surface, no 925
-            '925_temp_ht': null, '925_rh_ht': null, '925_wnd_ht': null,
-            '850_rh_ht': null, '850_wnd_ht': null, '850_vort_ht': null,
-            '700_rh_ht': null, '700_wnd_ht': null,
-            '500_rh_ht': null, '500_wnd_ht': null,
+            // GEFS winds are plain _wnd (no _ht); it has 250mb wind but not 300mb
+            '925_wnd_ht':            '925_wnd',
+            '850_wnd_ht':            '850_wnd',
+            '700_wnd_ht':            '700_wnd',
+            '500_wnd_ht':            '500_wnd',
+            // GEFS precip is 6-hourly
+            'precip_p03':            'precip_p06',
+            // GEFS mean/spread carries no RH layers, no 925 temperature
+            '925_temp_ht': null, '925_rh_ht': null,
+            '850_rh_ht': null, '700_rh_ht': null, '500_rh_ht': null,
             '300_wnd_ht': null,
             '1000_500_thick': null
         },
@@ -220,11 +230,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Used ONLY when the parameter dropdown is "Smart Profile" (temp_ht). Lets
     // the curated default chart at a level fall back to a different available
     // chart per model — without affecting explicit parameter selections.
-    // (e.g. SREF has no 700mb RH, so Smart Profile substitutes 700mb temperature;
+    // (e.g. GEFS has no 700mb RH, so Smart Profile substitutes 700mb temperature;
     //  but if the user explicitly picks "Relative Humidity", 700 stays disabled.)
     // ============================================================================
     const smartProfileFallbacks = {
-        sref:             { '700_rh_ht': '700_temp' },
         'gefs-mean-sprd': { '700_rh_ht': '700_temp' }
     };
 
@@ -274,16 +283,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================================================
     // INIT
     // ============================================================================
-    // Retired models leave the menu at their cut-off, before the saved selection
-    // is restored, so a returning visitor whose saved model is gone opens on GFS.
-    // If NWS moves the date again, change `retires` in modelConfig.
-    for (const [id, cfg] of Object.entries(modelConfig)) {
-        if (cfg.retires && Date.now() >= cfg.retires) {
-            modelSelect.querySelector(`option[value="${id}"]`)?.remove();
-            delete modelConfig[id];
-        }
-    }
+    // Models MAG has dropped. A returning visitor whose saved model is gone opens
+    // on its replacement if it has one (NAM -> RRFS), otherwise on GFS.
+    const replacedModels = { nam: 'rrfs' };
     const saved = loadSelections();
+    if (replacedModels[saved.model]) saved.model = replacedModels[saved.model];
     if (saved.model && modelConfig[saved.model]) modelSelect.value = saved.model;
     if (!modelConfig[modelSelect.value]) modelSelect.value = 'gfs';
     if (saved.param) paramSelect.value = saved.param;
@@ -294,7 +298,6 @@ document.addEventListener('DOMContentLoaded', () => {
     buildGrid();
     updateCellAvailability();
     log('Ready.');
-    noteRetirement();
     setTimeout(checkRunProgress, 300);
 
     // ============================================================================
@@ -308,12 +311,6 @@ document.addEventListener('DOMContentLoaded', () => {
         entry.textContent = `[${t}] ${msg}`;
         statusLog.prepend(entry);
         while (statusLog.children.length > 50) statusLog.lastChild.remove();
-    }
-    function noteRetirement() {
-        const cfg = modelConfig[modelSelect.value];
-        if (!cfg || !cfg.retires) return;
-        const when = new Date(cfg.retires).toUTCString().slice(5, 11) + ' ' + String(new Date(cfg.retires).getUTCHours()).padStart(2, '0') + 'Z';
-        log(`${cfg.label} is retired by NWS on ${when} (SCN 26-47) and leaves this menu then.`);
     }
     clearLogBtn.addEventListener('click', () => {
         statusLog.innerHTML = '<div class="log-entry">Log cleared.</div>';
@@ -367,7 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // otherwise fall back to the current model's defaultDensity.
     function refreshDensity(preferred) {
         const cfg = modelConfig[modelSelect.value];
-        const valid = ['0', '6', '12'];
+        const valid = ['0', '3', '6', '12'];
         const want = (preferred !== undefined && preferred !== null) ? String(preferred) : null;
         densitySelect.value = (want !== null && valid.includes(want))
             ? want
@@ -392,7 +389,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Frame Density: thin the columns to multiples of the chosen cadence,
         // but always keep the first (0h) and the final forecast hour so the run's
         // full reach stays visible even when the max hour isn't a clean multiple
-        // (e.g. SREF 87h, RAP 51h).
+        // (e.g. RAP 51h).
         const density = parseInt(densitySelect.value, 10) || 0;
         if (!density) return hours;
         const last = hours[hours.length - 1];
@@ -465,8 +462,14 @@ document.addEventListener('DOMContentLoaded', () => {
         gridContainer.appendChild(table);
     }
 
-    // Resolve the MAG product token for a (param, level) pair, applying model-specific overrides.
-    function resolveProduct(param, level) {
+    // Resolve the MAG product token for a (param, level, hour), applying model-specific overrides.
+    function resolveProduct(param, level, hour) {
+        const product = resolveBaseProduct(param, level);
+        const late = modelConfig[modelSelect.value].lateHourProducts;
+        if (product && late && parseInt(hour, 10) >= late.from && late.map[product]) return late.map[product];
+        return product;
+    }
+    function resolveBaseProduct(param, level) {
         const base = (productMap[param] || {})[level];
         if (!base) return null;
         const m = modelSelect.value;
@@ -487,7 +490,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const level = td.dataset.level;
             const hour = td.dataset.hour;
             
-            let product = resolveProduct(param, level);
+            let product = resolveProduct(param, level, hour);
             
             // Special case: Precipitation doesn't exist at hour 0
             if (param === 'precip' && hour === '0') product = null;
@@ -510,7 +513,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const param  = paramSelect.value;
         const cfg    = modelConfig[model];
 
-        const product = resolveProduct(param, level);
+        const product = resolveProduct(param, level, hour);
         if (!product) return null;
 
         const hourTok = fmtHour(parseInt(hour, 10));
@@ -577,7 +580,6 @@ document.addEventListener('DOMContentLoaded', () => {
         modelImage.classList.remove('loaded');
         saveSelections();
         checkRunProgress();
-        noteRetirement();
     });
     cycleSelect.addEventListener('change', () => {
         // For HRRR and RAP the grid range depends on cycle (full vs short forecast).
@@ -671,15 +673,9 @@ document.addEventListener('DOMContentLoaded', () => {
     //   Strategy: pick a canary product known to exist at every hour for the
     //   selected model, then binary-search the highest hour that returns 200.
     // ============================================================================
+    // 500mb vorticity is produced at every hour, in every area, for every model.
     function getCanaryProduct() {
-        const m = modelSelect.value;
-        // Use a level/product combination known to be produced for every hour
-        if (m === 'hrrr')           return { level: '500', product: '500_vort_ht' };
-        if (m === 'sref')           return { level: '500', product: '500_vort_ht' };
-        if (m === 'gefs-mean-sprd') return { level: '500', product: '500_vort_ht' };
-        if (m === 'rap')            return { level: '500', product: '500_vort_ht' };
-        if (m === 'nam')            return { level: '500', product: '500_vort_ht' };
-        return { level: '500', product: '500_vort_ht' }; // gfs
+        return { level: '500', product: '500_vort_ht' };
     }
 
     function buildCanaryUrl(hourInt) {

@@ -24,11 +24,11 @@
                 <label for="modelSelect">Model</label>
                 <select id="modelSelect">
                     <option value="gfs">GFS — Global, 384h</option>
-                    <option value="nam">NAM — Regional, 84h (retires Oct 14)</option>
+                    <option value="aigfs">AIGFS — AI global, 384h, 6-hourly</option>
+                    <option value="rrfs">RRFS — Replaced NAM, hi-res, 84h</option>
                     <option value="hrrr">HRRR — Hi-res, 48h, hourly cycle</option>
-                    <option value="sref">SREF — Ensemble, 87h, 03/09/15/21z (retires Oct 14)</option>
-                    <option value="gefs-mean-sprd">GEFS — Ensemble mean/spread, 384h</option>
                     <option value="rap">RAP — Hourly cycle, 51h at 03/09/15/21z, else 21h</option>
+                    <option value="gefs-mean-sprd">GEFS — Ensemble mean/spread, 384h</option>
                 </select>
             </div>
 
@@ -53,7 +53,7 @@
                     <option value="vort_ht">Vorticity &amp; Height — 500/850mb</option>
                     <option value="rh_ht">Relative Humidity — 850/700/500mb</option>
                     <option value="wnd_ht">Wind &amp; Height — 500/300/250/200mb</option>
-                    <option value="precip">Precipitation — Surface (3h accum)</option>
+                    <option value="precip">Precipitation — Surface (1h/3h/6h/12h by model)</option>
                 </select>
                 <p class="param-hint">Greyed-out cells = parameter not produced at that level.</p>
             </div>
@@ -62,6 +62,7 @@
                 <label for="densitySelect">Frame Density</label>
                 <select id="densitySelect">
                     <option value="0">Full resolution (native cadence)</option>
+                    <option value="3">3-hourly</option>
                     <option value="6">6-hourly</option>
                     <option value="12">12-hourly</option>
                 </select>
@@ -122,6 +123,6 @@
         </main>
     </div>
 
-    <script src="app.js?v=20260923"></script>
+    <script src="app.js?v=20261120"></script>
 </body>
 </html>
