@@ -13,7 +13,7 @@ An interactive, high-performance web dashboard for visualizing NCEP Model Guidan
 - **Run Progress Monitoring**: Real-time background scanning of NCEP servers to detect exactly how far the current model run has progressed, including a "Smart Freshness" check to prevent viewing yesterday's stale data.
 - **Keyboard Navigation**: Use arrow keys to explore the atmosphere and time-steps with precision.
 - **Current NCEP Models**: GFS, AIGFS, RRFS, HRRR, RAP, and GEFS Mean/Spread (see the table below).
-- **Regional Sectors**: RRFS and HRRR can be viewed on MAG's six US regional sectors (Southeast, South Central, Northeast, North Central, Northwest, Southwest) as well as CONUS.
+- **Every MAG Region**: Each model offers all the regions MAG plots for it, grouped in the menu: CONUS and the six US sectors (Southeast, South Central, Northeast, North Central, Northwest, Southwest), Alaska, Hawaii and Puerto Rico; North America and the surrounding oceans; and the rest of the world (South America, Europe, Africa, Asia, India, Arctic, North Polar).
 - **Cross-Level Consistency**: Synchronized viewing allows you to maintain the same forecast hour while switching between atmospheric parameters.
 - **Frame Density**: Thin long runs to 3-, 6- or 12-hourly columns so they fit without horizontal scrolling.
 
@@ -21,14 +21,16 @@ An interactive, high-performance web dashboard for visualizing NCEP Model Guidan
 
 | Model | Type | Cycles (UTC) | Forecast range | Regions |
 |---|---|---|---|---|
-| GFS | Global | 00/06/12/18 | 384 h (3-hourly to 240 h, 12-hourly after) | NAMER, CONUS |
-| AIGFS | Global, AI-based (NOAA's Artificial Intelligence GFS) | 00/06/12/18 | 384 h, 6-hourly | NAMER, CONUS |
-| RRFS | Regional, convection-allowing (replaced NAM) | 00/06/12/18 | 84 h, hourly | CONUS + 6 US sectors |
-| HRRR | Regional, convection-allowing | Hourly | 48 h at 00/06/12/18Z, 18 h otherwise | CONUS + 6 US sectors |
+| GFS | Global | 00/06/12/18 | 384 h (3-hourly to 240 h, 12-hourly after) | 17: NAMER, CONUS, Alaska, American Samoa, the Atlantic and Pacific domains, South America, Europe, Africa, Asia, India, Arctic, North Polar |
+| AIGFS | Global, AI-based (NOAA's Artificial Intelligence GFS) | 00/06/12/18 | 384 h, 6-hourly | Same 17 as GFS |
+| RRFS | Regional, convection-allowing (replaced NAM) | 00/06/12/18 | 84 h, hourly | CONUS, 6 US sectors, Alaska, Hawaii, Puerto Rico |
+| HRRR | Regional, convection-allowing | Hourly (Alaska every 3 h) | 48 h at 00/06/12/18Z, 18 h otherwise | CONUS, 6 US sectors, Alaska |
 | RAP | Regional | Hourly | 51 h at 03/09/15/21Z, 21 h otherwise | CONUS, NAMER |
-| GEFS Mean/Spread | Global ensemble | 00/06/12/18 | 384 h (6-hourly to 180 h, 12-hourly after) | NAMER, CONUS |
+| GEFS Mean/Spread | Global ensemble | 00/06/12/18 | 384 h (6-hourly to 180 h, 12-hourly after) | Same as GFS except American Samoa and the far South Pacific |
 
-Precipitation uses the accumulation period each model publishes on MAG at that hour: 1 h for HRRR, RAP and RRFS; 3 h for GFS (12 h past 240 h); 6 h for AIGFS and GEFS.
+Precipitation uses the accumulation period each model publishes on MAG at that hour: 1 h for HRRR, RAP and RRFS; 3 h for GFS (12 h past 240 h); 6 h for AIGFS and GEFS. MAG plots no GFS or AIGFS precipitation on the North Polar domain, so those cells are greyed out.
+
+AIGFS's outer domains (Alaska, Arctic, India, the Pacific domains, American Samoa) finish up to about an hour after its NAMER/CONUS charts, so Run Progress may show them as still in progress for a while.
 
 ### Model changes
 

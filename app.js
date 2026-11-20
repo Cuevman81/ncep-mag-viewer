@@ -11,6 +11,14 @@ document.addEventListener('DOMContentLoaded', () => {
     //   areas list only what MAG actually serves for that model
     // MAG 7.1.0 (Nov 2026) removed NAM and SREF (NWS SCN 26-47); RRFS replaces NAM.
     // ============================================================================
+    // MAG regions. US_SECTORS are the CONUS sub-sectors the hi-res models plot;
+    // GLOBAL_AREAS are the domains GFS/AIGFS plot (GEFS has all but two).
+    const US_SECTORS   = ['us-se', 'us-sc', 'us-ne', 'us-nc', 'us-nw', 'us-sw'];
+    const GLOBAL_AREAS = ['namer', 'conus', 'alaska', 'us-samoa', 'east-pac', 'west-atl', 'atlantic',
+                          'north-pac', 'south-pac', 'pac-region', 'samer', 'europe', 'africa', 'asia',
+                          'india', 'arctic', 'polar'];
+    const HRRR_AK_CYCLES = ['00', '03', '06', '09', '12', '15', '18', '21'];
+
     const modelConfig = {
         gfs: {
             label: 'GFS',
@@ -18,12 +26,13 @@ document.addEventListener('DOMContentLoaded', () => {
             nested: true,
             hourFmt: 'HHH',
             hourBands: [{ from: 0, to: 120, step: 3 }, { from: 123, to: 240, step: 3 }, { from: 252, to: 384, step: 12 }],
-            areas: ['namer', 'conus'],
+            areas: GLOBAL_AREAS,
             defaultArea: 'namer',
             defaultDensity: 12, // 93 native columns is too wide; open at 12h (~33 cols) so it fits without scroll
             runDuration: 5.0, // GFS 384h takes ~5 hours to fully appear on MAG
             // Past 240h GFS is 12-hourly and MAG only plots 12h/24h precip there
-            lateHourProducts: { from: 252, map: { 'precip_p03': 'precip_p12' } }
+            lateHourProducts: { from: 252, map: { 'precip_p03': 'precip_p12' } },
+            noPrecipAreas: ['polar'] // MAG plots no GFS precip on the Polar domain
         },
         aigfs: {
             label: 'AIGFS',
@@ -31,10 +40,13 @@ document.addEventListener('DOMContentLoaded', () => {
             nested: false,
             hourFmt: 'HHH',
             hourBands: [{ from: 0, to: 384, step: 6 }],
-            areas: ['namer', 'conus'],
+            areas: GLOBAL_AREAS,
             defaultArea: 'namer',
             defaultDensity: 12, // 65 native columns out to 384h; open at 12h so it fits without scroll
-            runDuration: 4.75 // 000h lands ~4h21m-4h36m after the cycle, 384h ~1h25m later (MAG, Nov 2026)
+            // 000h lands ~4h21m-4h36m after the cycle; 384h ~1h25m later for NAMER/CONUS/Europe,
+            // up to ~2h35m later for the outer domains (Alaska, India, Samoa...) (MAG, Nov 2026)
+            runDuration: 4.75,
+            noPrecipAreas: ['polar'] // MAG 7.0.0: AIGFS precip is not plotted for the Polar domain
         },
         rrfs: {
             label: 'RRFS',
@@ -42,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
             nested: false,
             hourFmt: 'HHH',
             hourBands: [{ from: 0, to: 84, step: 1 }],
-            areas: ['conus', 'us-se', 'us-sc', 'us-ne', 'us-nc', 'us-nw', 'us-sw'],
+            areas: ['conus', ...US_SECTORS, 'alaska', 'hawaii', 'pr'], // AK/HI/PR run the same cycles and hours
             defaultArea: 'conus',
             defaultDensity: 3, // 85 hourly columns; open at 3h (29 cols) like NAM used to
             runDuration: 2.25 // 000h lands ~1h42m-2h01m after the cycle, 084h ~1h35m-1h50m later (MAG, Nov 2026)
@@ -53,7 +65,8 @@ document.addEventListener('DOMContentLoaded', () => {
             nested: false,
             hourFmt: 'HHHMM',
             hourBands: [{ from: 0, to: 48, step: 1 }],
-            areas: ['conus', 'us-se', 'us-sc', 'us-ne', 'us-nc', 'us-nw', 'us-sw'],
+            areas: ['conus', ...US_SECTORS, 'alaska'],
+            areaCycles: { alaska: HRRR_AK_CYCLES }, // HRRR-Alaska runs every 3h, not hourly
             defaultArea: 'conus',
             extendedCycles: ['00', '06', '12', '18'],
             shortMaxHour: 18,
@@ -66,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
             nested: false,
             hourFmt: 'HHH',
             hourBands: [{ from: 0, to: 180, step: 6 }, { from: 192, to: 384, step: 12 }],
-            areas: ['namer', 'conus'],
+            areas: GLOBAL_AREAS.filter(a => a !== 'us-samoa' && a !== 'pac-region'),
             defaultArea: 'namer',
             defaultDensity: 12, // 47 native columns out to 384h; open at 12h so it fits without scroll
             runDuration: 6.0 // GEFS is the slowest
@@ -88,16 +101,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    const areaLabels = {
-        namer:   'NAMER (North America)',
-        conus:   'CONUS',
-        'us-se': 'US Southeast',
-        'us-sc': 'US South Central',
-        'us-ne': 'US Northeast',
-        'us-nc': 'US North Central',
-        'us-nw': 'US Northwest',
-        'us-sw': 'US Southwest'
-    };
+    // Region dropdown groups, in display order; a model shows only the areas it has.
+    const areaGroups = [
+        { label: 'United States', areas: {
+            conus: 'CONUS', 'us-se': 'US Southeast', 'us-sc': 'US South Central', 'us-ne': 'US Northeast',
+            'us-nc': 'US North Central', 'us-nw': 'US Northwest', 'us-sw': 'US Southwest',
+            alaska: 'Alaska', hawaii: 'Hawaii', pr: 'Puerto Rico', 'us-samoa': 'American Samoa' } },
+        { label: 'North America & oceans', areas: {
+            namer: 'NAMER (North America)', 'east-pac': 'Eastern Pacific (S. US, Mexico)',
+            'west-atl': 'Western Atlantic (SE US, Caribbean)', atlantic: 'Atlantic',
+            'north-pac': 'North Pacific', 'south-pac': 'South Pacific', 'pac-region': 'Pacific (incl. far South Pacific)' } },
+        { label: 'World', areas: {
+            samer: 'South America', europe: 'Europe', africa: 'Africa', asia: 'Asia',
+            india: 'India & Pakistan', arctic: 'Arctic', polar: 'North Polar' } }
+    ];
 
     const levels = [
         { id: 'sfc',   name: 'Surface' },
@@ -323,36 +340,48 @@ document.addEventListener('DOMContentLoaded', () => {
         const cfg = modelConfig[modelSelect.value];
         const previous = regionSelect.value;
         regionSelect.innerHTML = '';
-        cfg.areas.forEach(a => {
-            const opt = document.createElement('option');
-            opt.value = a;
-            opt.textContent = areaLabels[a] || a.toUpperCase();
-            regionSelect.appendChild(opt);
-        });
+        for (const g of areaGroups) {
+            const ids = Object.keys(g.areas).filter(a => cfg.areas.includes(a));
+            if (!ids.length) continue;
+            const group = document.createElement('optgroup');
+            group.label = g.label;
+            ids.forEach(a => {
+                const opt = document.createElement('option');
+                opt.value = a;
+                opt.textContent = g.areas[a];
+                group.appendChild(opt);
+            });
+            regionSelect.appendChild(group);
+        }
         const want = preferred || previous;
         regionSelect.value = cfg.areas.includes(want) ? want : cfg.defaultArea;
     }
 
+    // Cycles for the current model and region (HRRR-Alaska runs only every 3h).
+    function cyclesFor(cfg) {
+        return (cfg.areaCycles && cfg.areaCycles[regionSelect.value]) || cfg.cycles;
+    }
     function refreshCycleOptions(preferred) {
         const cfg = modelConfig[modelSelect.value];
+        const cycles = cyclesFor(cfg);
         const previous = cycleSelect.value;
         cycleSelect.innerHTML = '';
-        cfg.cycles.forEach(c => {
+        cycles.forEach(c => {
             const opt = document.createElement('option');
             opt.value = c;
             opt.textContent = `${c}z`;
             cycleSelect.appendChild(opt);
         });
         const want = preferred || previous;
-        if (cfg.cycles.includes(want)) {
+        if (cycles.includes(want)) {
             cycleSelect.value = want;
         } else {
             // Pick the newest cycle past its cut-off (wrapping past 00Z). Before the
             // cut-off, that cycle's folder on MAG still holds yesterday's run.
             const now = new Date();
             const nowH = now.getUTCHours() + now.getUTCMinutes() / 60;
-            let best = cfg.cycles[0], bestAge = Infinity;
-            for (const c of cfg.cycles) {
+            let best = cycles[0], bestAge = Infinity;
+            for (const c of cycles) {
                 const age = (nowH - parseInt(c, 10) + 24) % 24;
                 if (age >= runDurationFor(cfg, c) && age < bestAge) { best = c; bestAge = age; }
             }
@@ -465,7 +494,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Resolve the MAG product token for a (param, level, hour), applying model-specific overrides.
     function resolveProduct(param, level, hour) {
         const product = resolveBaseProduct(param, level);
-        const late = modelConfig[modelSelect.value].lateHourProducts;
+        const cfg = modelConfig[modelSelect.value];
+        if (product && product.startsWith('precip_') && (cfg.noPrecipAreas || []).includes(regionSelect.value)) return null;
+        const late = cfg.lateHourProducts;
         if (product && late && parseInt(hour, 10) >= late.from && late.map[product]) return late.map[product];
         return product;
     }
@@ -581,7 +612,8 @@ document.addEventListener('DOMContentLoaded', () => {
         saveSelections();
         checkRunProgress();
     });
-    cycleSelect.addEventListener('change', () => {
+    cycleSelect.addEventListener('change', onCycleChange);
+    function onCycleChange() {
         // For HRRR and RAP the grid range depends on cycle (full vs short forecast).
         // Rebuild it, keeping the hovered cell if its hour exists in the new range.
         if (modelConfig[modelSelect.value].extendedCycles) {
@@ -600,8 +632,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentCell) loadImageForCell(currentCell);
         saveSelections();
         checkRunProgress();
-    });
+    }
     regionSelect.addEventListener('change', () => {
+        // A region with its own cycle list (HRRR-Alaska) may move the cycle; then
+        // handle it as a cycle change (it rebuilds the grid and rescans).
+        const cfg = modelConfig[modelSelect.value];
+        if (cfg.areaCycles) {
+            const before = cycleSelect.value;
+            refreshCycleOptions();
+            if (cycleSelect.value !== before) { updateCellAvailability(); onCycleChange(); return; }
+        }
+        // Some regions lack a product (no GFS/AIGFS precip on Polar), so re-grey the cells
+        updateCellAvailability();
         if (currentCell) loadImageForCell(currentCell);
         saveSelections();
         checkRunProgress();
