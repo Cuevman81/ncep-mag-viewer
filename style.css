@@ -194,7 +194,13 @@ body {
     border-radius: var(--radius-md);
     display: flex;
     flex-direction: column;
-    max-height: 200px;
+    /* Fixed height that never shrinks: as a flex item of the scrolling sidebar it
+       used to collapse to one line when the sidebar overflowed. Drag the corner to resize. */
+    flex-shrink: 0;
+    height: 260px;
+    min-height: 120px;
+    max-height: 70vh;
+    resize: vertical;
     margin-bottom: 1.5rem;
     overflow: hidden;
 }
@@ -230,6 +236,7 @@ body {
     font-family: monospace;
     font-size: 0.7rem;
     flex: 1;
+    min-height: 0; /* let the entries scroll inside the panel */
 }
 
 .log-entry {
