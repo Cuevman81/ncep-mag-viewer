@@ -1,0 +1,220 @@
+/* Tab bar, place box and the point-forecast tabs. Colors come from style.css. */
+
+/* ── Tab bar ── */
+.topbar {
+    flex-shrink: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1.5rem;
+    padding: 0 1.5rem;
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    z-index: 20;
+}
+.tabs { display: flex; overflow-x: auto; }
+.tab {
+    background: none;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    color: var(--text-secondary);
+    font: 500 0.9rem 'Inter', sans-serif;
+    padding: 0.85rem 1rem;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.tab:hover { color: var(--text-primary); }
+.tab[aria-current] { color: var(--accent-hover); border-bottom-color: var(--accent); }
+.tab:focus-visible, .pt-btn:focus-visible, .pt-ctl:focus-visible,
+.model-legend-item:focus-visible, .wx-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.place-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; padding: 0.4rem 0; }
+.place-bar label { font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; }
+.place-status { font-size: 0.8rem; color: var(--text-secondary); }
+#placeInput { width: 170px; }
+
+/* ── Shared controls ── */
+.pt-ctl {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font: 0.85rem 'Inter', sans-serif;
+    padding: 0.4rem 0.55rem;
+    max-width: 100%;
+}
+.pt-btn {
+    background: var(--accent);
+    color: #fff;
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-sm);
+    font: 600 0.85rem 'Inter', sans-serif;
+    padding: 0.4rem 0.8rem;
+    cursor: pointer;
+}
+.pt-btn:hover:not(:disabled) { background: var(--accent-hover); }
+.pt-btn.alt { background: var(--bg-tertiary); border-color: var(--border); color: var(--accent-hover); }
+.pt-btn.alt:hover:not(:disabled) { background: var(--border); }
+.pt-btn:disabled { opacity: 0.35; cursor: default; }
+.point-view { color-scheme: dark; flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 1rem 1.5rem 0.75rem; }
+.pt-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.9rem; margin-bottom: 0.75rem; }
+.pt-toolbar label { display: flex; align-items: center; gap: 0.45rem; font-size: 0.85rem; color: var(--text-secondary); }
+.pt-loc { flex-basis: 100%; font-size: 0.8rem; color: var(--accent-hover); line-height: 1.4; }
+.pt-body {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.75rem;
+}
+.pt-scroll { overflow-x: auto; }
+.pt-msg { color: var(--text-secondary); font-size: 0.85rem; padding: 1.25rem; line-height: 1.5; }
+.pt-msg.warn, .c-warn { color: #fbbf24; }
+.pt-foot { font-size: 0.72rem; color: var(--text-secondary); line-height: 1.5; padding: 0.5rem 2px 2px; }
+.pt-foot.c-warn { color: #fbbf24; }
+.pt-foot.pad { padding: 0.5rem 0 0; }
+.c-txt { color: var(--text-primary); }
+.c-mut { color: var(--text-secondary); }
+.c-dim { color: #8b95a1; }
+.c-acc { color: var(--accent-hover); }
+.mono { font-family: ui-monospace, Menlo, Consolas, monospace; }
+.swatch { width: 16px; height: 3px; display: inline-block; flex: 0 0 auto; }
+.pt-badge { font-size: 0.6rem; font-weight: 700; padding: 1px 4px; border-radius: 2px; color: #fff; }
+.pt-badge.ai { background: #5b3d8f; }
+.pt-badge.hybrid { background: #1f6b5c; }
+
+/* ── Model Comparison ── */
+#model-plot { position: relative; touch-action: pan-y; }
+#model-canvas { display: block; }
+#model-cursor { position: absolute; left: 0; top: 0; pointer-events: none; }
+#model-readout {
+    position: absolute;
+    display: none;
+    pointer-events: none;
+    z-index: 2;
+    background: rgba(15, 17, 21, 0.96);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 6px 8px;
+    font: 11px/1.5 ui-monospace, Menlo, Consolas, monospace;
+    white-space: nowrap;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7);
+}
+.rd-head { color: var(--accent-hover); border-bottom: 1px solid var(--border); padding-bottom: 3px; margin-bottom: 3px; }
+.rd-row { display: flex; gap: 6px; align-items: center; }
+.rd-row .swatch { width: 10px; }
+.rd-lbl { color: var(--text-secondary); flex: 1 1 auto; }
+.rd-sum { border-top: 1px solid var(--border); margin-top: 3px; padding-top: 3px; }
+#model-legend { display: flex; flex-wrap: wrap; gap: 6px 10px; padding: 8px 2px 2px; font-size: 0.75rem; }
+#model-spread { font-size: 0.75rem; color: var(--text-secondary); padding: 2px; line-height: 1.5; }
+#model-spread b { color: var(--text-primary); }
+.model-legend-item {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: none; border: 0; padding: 2px 3px; margin: 0;
+    font: inherit; color: var(--text-primary); cursor: pointer; border-radius: 3px;
+}
+.model-legend-item:hover { background: rgba(255, 255, 255, 0.06); }
+.model-legend-item.off { opacity: 0.45; }
+.model-legend-item.off .name, .wx-row.off .name { text-decoration: line-through; }
+
+/* ── MOS bulletin table ──
+   Laid out like the real MDL bulletin: parameters down the left, forecast
+   projections across. Wide by nature, so it scrolls inside its own container.
+   Text size comes from --mos-fs, which the A−/A+ control sets; padding is in em
+   so the grid scales with the text. */
+#mos-body { --mos-fs: 12px; }
+#mos-station { width: 72px; text-transform: uppercase; }
+.mos-table {
+    border-collapse: collapse;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: var(--mos-fs);
+    white-space: nowrap;
+}
+.mos-head { font-size: max(11px, calc(var(--mos-fs) - 1px)); color: var(--text-secondary); padding: 0 2px 8px; line-height: 1.5; }
+.mos-head b { color: var(--text-primary); }
+.mos-foot { font-size: max(11px, calc(var(--mos-fs) - 2px)); color: var(--text-secondary); padding: 8px 2px 2px; line-height: 1.6; }
+.mos-table th, .mos-table td { padding: 0.2em 0.5em; text-align: center; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+.mos-table thead th { color: var(--accent-hover); font-weight: 700; border-bottom: 1px solid var(--border); background: var(--bg-secondary); }
+/* Row label column stays put while the projections scroll under it. */
+.mos-table th:first-child { text-align: left; position: sticky; left: 0; z-index: 2; background: var(--bg-secondary); padding-right: 1em; }
+.mos-table tbody th { font-weight: 700; }
+.mos-table tbody tr:hover td { background: var(--cell-hover); }
+.mos-fontsize { display: flex; align-items: center; gap: 4px; }
+.mos-fontsize span { font: 11px ui-monospace, Menlo, Consolas, monospace; color: var(--text-secondary); min-width: 34px; text-align: center; }
+
+/* ── Soundings ── */
+#skewt-body { display: flex; align-items: flex-start; gap: 1rem; }
+#skewt-body > .pt-msg { flex: 1; }
+.snd-chart { flex: 0 1 auto; width: min(640px, 55%); min-width: 320px; max-height: calc(100vh - 220px); background: #0a0f16; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.snd-side { display: flex; flex-direction: column; gap: 0.5rem; flex: 1 1 280px; min-width: 270px; max-width: 460px; }
+.snd-hodo { flex: 0 0 auto; }
+.snd-idx { font-size: 0.78rem; line-height: 1.75; }
+.snd-parcels { width: 100%; border-collapse: collapse; }
+.snd-parcels th, .snd-parcels td { text-align: right; padding-left: 6px; }
+.snd-parcels th { color: var(--text-secondary); font-weight: 600; }
+.snd-parcels .lbl { text-align: left; padding-left: 0; color: var(--text-secondary); }
+.snd-parcels .strong { font-weight: 600; }
+.snd-row { display: flex; justify-content: space-between; }
+.snd-row b { font-weight: 600; }
+.snd-sect { color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.68rem; margin: 7px 0 2px; border-top: 1px solid var(--border); padding-top: 5px; }
+.snd-sect.first { margin-top: 0; border-top: 0; padding-top: 0; }
+.snd-note { color: var(--text-secondary); font-size: 0.7rem; line-height: 1.5; margin-top: 4px; }
+.snd-note.rule { border-top: 1px solid var(--border); padding-top: 5px; }
+
+/* ── Winter precip meteogram ── */
+.wx-headline { font-size: 0.95rem; line-height: 1.45; padding: 2px 2px 8px; }
+.wx-h { font-size: 0.8rem; font-weight: 700; padding: 10px 2px 3px; }
+.wx-h .wx-dim { font-weight: 400; }
+.wx-table { border-collapse: collapse; font: 12px ui-monospace, Menlo, Consolas, monospace; width: 100%; }
+.wx-table th, .wx-table td { padding: 3px 7px; text-align: center; border-bottom: 1px solid rgba(255, 255, 255, 0.06); white-space: nowrap; }
+.wx-table thead th { color: var(--accent-hover); border-bottom-color: var(--border); }
+.wx-table th:first-child { text-align: left; font-weight: 400; position: sticky; left: 0; background: var(--bg-secondary); }
+.wx-table .wx-prev { padding-left: 28px; color: var(--text-secondary); }
+.wx-table .wx-short { color: #fbbf24; }
+.wx-off > * { opacity: 0.45; }
+.wx-old > * { opacity: 0.75; }
+.wx-dim { color: #8b95a1; }
+.wx-row { display: inline-flex; align-items: center; gap: 6px; background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; }
+.wx-row:hover { color: var(--accent-hover); }
+.wx-readout {
+    position: sticky; top: -0.75rem; z-index: 3;
+    background: var(--bg-secondary);
+    font: 11px/1.6 ui-monospace, Menlo, Consolas, monospace;
+    color: var(--text-secondary);
+    padding: 8px 2px; margin-top: 8px; min-height: 34px;
+    border-bottom: 1px solid var(--border);
+}
+.wx-cell { display: inline-block; margin-right: 14px; color: var(--text-primary); white-space: nowrap; }
+.wx-foot { font-size: 0.72rem; color: var(--text-secondary); line-height: 1.55; padding: 8px 2px 2px; }
+#winter-svg { display: block; width: 100%; min-width: 760px; touch-action: pan-x pan-y; font-family: ui-monospace, Menlo, Consolas, monospace; }
+#winter-svg .wx-t { fill: #cdd6df; font-size: 11px; font-weight: 700; }
+#winter-svg .wx-a { fill: #8b97a3; font-size: 10.5px; }
+#winter-svg .wx-a-prev { opacity: 0.6; font-size: 9px; }
+#winter-svg .wx-g { stroke: rgba(255, 255, 255, 0.07); }
+#winter-svg .wx-d { stroke: rgba(255, 255, 255, 0.2); }
+
+/* ── Phone ── */
+@media (max-width: 800px) {
+    body { height: auto; min-height: 100vh; overflow: auto; }
+    .topbar { padding: 0 0.5rem; }
+    .tabs { width: 100%; }
+    .tab { flex: 1 0 auto; padding: 0.75rem 0.35rem; font-size: 0.78rem; }
+    .point-view { padding: 0.75rem; }
+    .pt-body { overflow: visible; padding: 0.6rem; }
+    .wx-readout { position: static; }
+
+    /* Charts: the selectors, then the grid and chart, then the panels. */
+    .app-container { flex-direction: column; padding: 0.75rem; gap: 0.75rem; }
+    .sidebar { display: contents; }
+    .logo, .control-group, .status-panel { margin-bottom: 0; }
+    .main-content { order: 1; flex: none; padding: 0; overflow: visible; }
+    .top-grid-area { margin-bottom: 0.75rem; }
+    .image-viewer { flex: none; height: 75vw; min-height: 260px; }
+    .placeholder { font-size: 1rem; padding: 1rem; text-align: center; }
+    .info-panel, .log-panel, .about-panel { order: 2; margin-bottom: 0; }
+
+    #skewt-body { flex-direction: column; }
+    .snd-chart { width: 100%; min-width: 0; max-height: none; }
+    .snd-side { width: 100%; max-width: none; flex: none; min-width: 0; }
+}

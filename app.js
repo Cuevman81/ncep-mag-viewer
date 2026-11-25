@@ -576,7 +576,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Arrow-key navigation
+    const chartsView = document.getElementById('view-charts');
     document.addEventListener('keydown', (e) => {
+        if (chartsView.hidden) return; // a point-forecast tab is open; leave its arrow keys alone
         if (!currentCell || ['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName)) return;
         const dir = { ArrowLeft: [0,-1], ArrowRight: [0,1], ArrowUp: [-1,0], ArrowDown: [1,0] }[e.key];
         if (!dir) return;
