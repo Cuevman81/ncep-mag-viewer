@@ -5,7 +5,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const S = require('./_load').load(['_Rd', '_esat', '_mixr', '_lclTempK', '_moistLapse', '_uv', '_KT2MS', '_thetaE', '_dewpFromW', '_coarsen',
     '_liftParcel', '_mlParcel', '_muParcel', '_effInflow', '_bunkers', '_srh', '_bulkShear', '_dcape', '_lapse', '_lapseP', '_wetBulb',
-    '_wbzHeight', '_heightOf', '_skewtShear', '_skewtCompute', 'SOUNDING_LEVELS', '_dewpointFromRh', '_modelSoundingProfile', '_nearestForecastIndex']);
+    '_wbzHeight', '_heightOf', '_skewtShear', '_skewtCompute', 'SOUNDING_LEVELS', 'SOUNDING_MODELS', '_dewpointFromRh', '_modelSoundingProfile', '_nearestForecastIndex']);
 const near = (a, b, tol) => assert.ok(Math.abs(a - b) <= tol, `${a} vs ${b}`);
 
 test('dewpoint from RH: saturated equals temperature, 50% at 20 C is 9.3 C', () => {
@@ -53,4 +53,11 @@ test('a stable profile gives no CAPE and no composites', () => {
 test('the default hour is the one nearest now', () => {
     const iso = h => new Date(Math.floor(Date.now() / 3600000) * 3600000 + h * 3600000).toISOString().slice(0, 16);
     assert.ok([2, 3].includes(S._nearestForecastIndex({ times: [iso(-2), iso(-1), iso(0), iso(1)] })));
+});
+
+test('GFS is plain GFS, not the seamless blend that returns HRRR over the U.S.', () => {
+    assert.deepEqual(Object.keys(S.SOUNDING_MODELS), ['gfs_hrrr', 'gfs_global']);
+    const html = require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'index.html'), 'utf8');
+    const menu = html.match(/id="skewt-source"[\s\S]*?<\/select>/)[0];
+    assert.deepEqual([...menu.matchAll(/value="([^"]+)"/g)].map(m => m[1]), Object.keys(S.SOUNDING_MODELS));
 });

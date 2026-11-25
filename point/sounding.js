@@ -513,11 +513,13 @@ function _vadBarbPaths(cx, cy, dirFrom, spd, len) {
 // Observed RAOBs are left out: they need FX-Net's /api/raob proxy.
 // HRRR is the point of the exercise (3 km, hourly runs, convection-allowing);
 // GFS is offered alongside it so you can see the mesoscale solution diverge from
-// the global one at the same spot.
+// the global one at the same spot. It has to be gfs_global: gfs_seamless is a
+// blend that serves HRRR itself for the first ~48 h over the U.S., so the two
+// choices came back identical.
 const SOUNDING_LEVELS = [1000, 975, 950, 925, 900, 850, 800, 700, 600, 500, 400, 300, 250, 200, 150, 100];
 const SOUNDING_MODELS = {
     gfs_hrrr:     { label: 'HRRR — 3 km forecast', hours: 48 },
-    gfs_seamless: { label: 'GFS — global forecast', hours: 120 }
+    gfs_global:   { label: 'GFS — global forecast', hours: 120 }
 };
 
 // Open-Meteo publishes RH per level, not dewpoint. Alduchov-Eskridge Magnus.

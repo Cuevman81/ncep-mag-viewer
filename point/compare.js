@@ -22,6 +22,8 @@
 // cycle this model is currently serving. For the `_seamless` families — which
 // splice a high-res domain onto a global one — it names the GLOBAL member, since
 // that is the run covering the full length of the chart.
+// GFS must be gfs_global, not gfs_seamless: over the U.S. the seamless blend IS
+// HRRR for the first ~48 h, which hid the GFS line behind the HRRR one.
 // `ens` models come from Open-Meteo's ensemble API instead: drawn as the member
 // mean with a 10th–90th percentile band. `hybrid` is HGEFS, NOAA's blend of the
 // physics GEFS and the AI GEFS, served as its ensemble mean.
@@ -31,7 +33,7 @@
 // no other AI model (GraphCast, GenCast, FourCastNet, Pangu, Aurora) has a free
 // point API.
 const MODEL_SOURCES = [
-    { id: 'gfs_seamless',         label: 'GFS',        org: 'NOAA NCEP', color: '#00e5ff', runDir: 'ncep_gfs013' },
+    { id: 'gfs_global',           label: 'GFS',        org: 'NOAA NCEP', color: '#00e5ff', runDir: 'ncep_gfs013' },
     { id: 'gfs_hrrr',             label: 'HRRR',       org: 'NOAA 3 km', color: '#ff8a3c', shortRange: true, runDir: 'ncep_hrrr_conus' },
     { id: 'ncep_rrfs_conus',      label: 'RRFS',       org: 'NOAA 3 km', color: '#ff4f6d', shortRange: true, runDir: 'ncep_rrfs_conus' },
     { id: 'ecmwf_ifs025',         label: 'ECMWF IFS',  org: 'ECMWF',     color: '#ff5ad1', runDir: 'ecmwf_ifs025' },
@@ -47,7 +49,8 @@ const MODEL_SOURCES = [
 // Legend clicks hide a model; remembered per browser. Eleven traces is past
 // what one chart reads well, so this is how a forecaster narrows it down.
 const modelHidden = new Set((() => {
-    try { return JSON.parse(localStorage.getItem('ncep_model_hidden') || '[]'); } catch (_) { return []; }
+    // A GFS line hidden before the id changed stays hidden.
+    try { return JSON.parse(localStorage.getItem('ncep_model_hidden') || '[]').map(id => id === 'gfs_seamless' ? 'gfs_global' : id); } catch (_) { return []; }
 })());
 
 // Mean and 10th–90th percentile of one ensemble field. Open-Meteo names the

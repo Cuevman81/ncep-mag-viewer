@@ -4,7 +4,7 @@
 'use strict';
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const M = require('./_load').load(['quantileSorted', 'ensembleStats', 'alignToTimes']);
+const M = require('./_load').load(['MODEL_SOURCES', 'quantileSorted', 'ensembleStats', 'alignToTimes']);
 
 test('quantileSorted interpolates between members', () => {
     const a = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
@@ -41,4 +41,8 @@ test('an hour where under half the members report stays empty', () => {
 
 test('alignToTimes matches by valid time, not position', () => {
     assert.deepEqual(M.alignToTimes(['02', '03', '04'], [2, 3, 4], ['01', '02', '03']), [null, 2, 3]);
+});
+
+test('the GFS line is plain GFS, not the seamless blend that returns HRRR over the U.S.', () => {
+    assert.equal(M.MODEL_SOURCES.find(m => m.label === 'GFS').id, 'gfs_global');
 });

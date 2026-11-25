@@ -55,6 +55,7 @@ Good to know:
 - NOAA's AI models (AIGFS, AIGEFS, HGEFS) publish no humidity, so they have no dewpoint line.
 - Winter amounts assume no melting or compaction, so they run high on warm ground. Model profiles come from the nearest BUFKIT site; sites more than 100 miles away are not used.
 - HRRR, RRFS and RAP are short-range, so their lines end early.
+- GFS in Model Comparison and Soundings is plain GFS (Open-Meteo `gfs_global`). Open-Meteo's `gfs_seamless` blend is HRRR for about the first two days over the lower 48, so it is not used.
 
 These tabs are copied from FX-Net NextGen, and use the same formulas.
 
