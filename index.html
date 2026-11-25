@@ -3,16 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <!-- GitHub Pages can't send headers, so the CSP lives here. It allows only this site's
-         own script/CSS, Google Fonts, and images from MAG plus the data: SVG arrows in style.css. -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; img-src 'self' data: https://mag.ncep.noaa.gov; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+         own script/CSS, Google Fonts, images from MAG plus the data: SVG arrows in style.css, and
+         fetches to the point-forecast APIs (point/*.js). No inline script or style attributes. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; img-src 'self' data: https://mag.ncep.noaa.gov; connect-src 'self' https://api.open-meteo.com https://ensemble-api.open-meteo.com https://geocoding-api.open-meteo.com https://mesonet.agron.iastate.edu https://api.weather.gov https://api.zippopotam.us; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; object-src 'none'; base-uri 'none'; form-action 'none'">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NCEP Model Guidance Viewer</title>
-    <link rel="stylesheet" href="style.css?v=20261120">
+    <link rel="stylesheet" href="style.css?v=20261125">
+    <link rel="stylesheet" href="point/point.css?v=20261125">
     <!-- Google Fonts for modern typography -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="app-container">
+    <header class="topbar">
+        <nav class="tabs" aria-label="Views">
+            <button type="button" class="tab" data-view="charts" aria-current="page">Charts</button>
+            <button type="button" class="tab" data-view="compare">Model Comparison</button>
+            <button type="button" class="tab" data-view="mos">MOS</button>
+            <button type="button" class="tab" data-view="soundings">Soundings</button>
+            <button type="button" class="tab" data-view="winter">Winter</button>
+        </nav>
+        <div class="place-bar" id="placeBar" hidden>
+            <label for="placeInput">Place</label>
+            <input id="placeInput" class="pt-ctl" type="text" placeholder="ZIP or City, ST" autocomplete="off">
+            <button type="button" id="placeGo" class="pt-btn">Go</button>
+            <span id="placeStatus" class="place-status" role="status"></span>
+        </div>
+    </header>
+
+    <div class="app-container" id="view-charts">
         <!-- Sidebar Controls -->
         <aside class="sidebar">
             <div class="logo">
@@ -99,7 +117,7 @@
                 <p>Developed by <strong>Rodney Cuevas</strong>, Meteorologist.</p>
                 <p>Questions, comments, or bugs? <a href="mailto:RCuevas@mdeq.ms.gov">RCuevas@mdeq.ms.gov</a></p>
                 <p><a href="https://cuevman81.github.io/ncep-mag-viewer/" target="_blank">View Project Live</a></p>
-                <p class="data-source">Data Source: NOAA NCEP Model Analyses and Guidance (MAG)</p>
+                <p class="data-source">Data Source: NOAA NCEP Model Analyses and Guidance (MAG). Sources for the other tabs are listed on each tab.</p>
             </div>
             
             <!-- Grid removed from sidebar and moved to main content top -->
@@ -123,6 +141,109 @@
         </main>
     </div>
 
-    <script src="app.js?v=20261120b"></script>
+    <!-- Point-forecast tabs. Each loads its data only when opened (point/tabs.js). -->
+    <section class="point-view" id="view-compare" aria-label="Model Comparison" hidden>
+        <div class="pt-toolbar">
+            <label>Field
+                <select id="model-var" class="pt-ctl">
+                    <option value="temperature_2m" selected>Temperature</option>
+                    <option value="dewpoint_2m">Dewpoint</option>
+                    <option value="wind_speed_10m">Wind</option>
+                    <option value="precipitation">Precip</option>
+                    <option value="pressure_msl">MSLP</option>
+                </select>
+            </label>
+            <label>Range
+                <select id="model-days" class="pt-ctl">
+                    <option value="3">3 days</option>
+                    <option value="5">5 days</option>
+                    <option value="7" selected>7 days</option>
+                    <option value="10">10 days</option>
+                    <option value="15">15 days</option>
+                </select>
+            </label>
+            <span id="model-loc" class="pt-loc">—</span>
+        </div>
+        <div class="pt-body" id="model-body"></div>
+    </section>
+
+    <section class="point-view" id="view-mos" aria-label="MOS Guidance" hidden>
+        <div class="pt-toolbar">
+            <label>Station
+                <input id="mos-station" class="pt-ctl" type="text" maxlength="4" placeholder="ICAO" autocomplete="off">
+            </label>
+            <button type="button" id="mos-go" class="pt-btn">Go</button>
+            <button type="button" id="mos-nearest" class="pt-btn alt" title="Nearest station to the place above">Nearest</button>
+            <label>Model
+                <select id="mos-model" class="pt-ctl">
+                    <option value="GFS" selected>GFS MOS (MAV)</option>
+                    <option value="MEX">GFS Extended (MEX)</option>
+                    <option value="LAV">LAMP (hourly)</option>
+                    <option value="NBS">NBM Short</option>
+                    <option value="NBE">NBM Extended</option>
+                </select>
+            </label>
+            <div class="mos-fontsize" role="group" aria-label="MOS text size">
+                <button id="mos-font-down" type="button" class="pt-btn alt" title="Smaller text" aria-label="Smaller text">A−</button>
+                <span id="mos-font-val" aria-live="polite">12px</span>
+                <button id="mos-font-up" type="button" class="pt-btn alt big" title="Larger text" aria-label="Larger text">A+</button>
+            </div>
+            <span id="mos-loc" class="pt-loc">—</span>
+        </div>
+        <div class="pt-body" id="mos-body"></div>
+    </section>
+
+    <section class="point-view" id="view-soundings" aria-label="Forecast Soundings" hidden>
+        <div class="pt-toolbar">
+            <label>Model
+                <select id="skewt-source" class="pt-ctl">
+                    <option value="gfs_hrrr" selected>HRRR — 3 km forecast</option>
+                    <option value="gfs_seamless">GFS — global forecast</option>
+                </select>
+            </label>
+            <label>Valid
+                <select id="skewt-time" class="pt-ctl"></select>
+            </label>
+            <span id="skewt-meta" class="pt-loc">—</span>
+        </div>
+        <div class="pt-body" id="skewt-body"></div>
+        <div class="pt-foot pad">Model data by <b>Open-Meteo.com</b> (CC BY 4.0) — HRRR &amp; GFS/NOAA NCEP. Forecast soundings on 16 pressure levels plus the surface; observed (RAOB) soundings are not included.</div>
+    </section>
+
+    <section class="point-view" id="view-winter" aria-label="Winter Precip Meteogram" hidden>
+        <div class="pt-toolbar">
+            <label>Range
+                <select id="winter-hours" class="pt-ctl">
+                    <option value="36">36 h</option>
+                    <option value="48">48 h</option>
+                    <option value="84" selected>84 h (3.5 d)</option>
+                    <option value="120">120 h (5 d)</option>
+                    <option value="168">168 h (7 d)</option>
+                </select>
+            </label>
+            <label>Snow ratio
+                <select id="winter-ratio" class="pt-ctl">
+                    <option value="kuchera" selected>Kuchera ratio</option>
+                    <option value="5">5:1 (wet)</option>
+                    <option value="8">8:1</option>
+                    <option value="10">10:1</option>
+                    <option value="12">12:1</option>
+                    <option value="15">15:1</option>
+                    <option value="20">20:1 (dry)</option>
+                </select>
+            </label>
+            <label class="check"><input type="checkbox" id="winter-prev"> Previous runs</label>
+            <span id="winter-loc" class="pt-loc">—</span>
+        </div>
+        <div class="pt-body" id="winter-body"></div>
+    </section>
+
+    <script src="app.js?v=20261125"></script>
+    <script src="point/common.js?v=20261125"></script>
+    <script src="point/compare.js?v=20261125"></script>
+    <script src="point/mos.js?v=20261125"></script>
+    <script src="point/sounding.js?v=20261125"></script>
+    <script src="point/winter.js?v=20261125"></script>
+    <script src="point/tabs.js?v=20261125"></script>
 </body>
 </html>

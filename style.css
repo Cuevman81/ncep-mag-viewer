@@ -28,12 +28,19 @@ body {
     color: var(--text-primary);
     height: 100vh;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+[hidden] {
+    display: none !important;
 }
 
 .app-container {
     display: flex;
-    height: 100vh;
-    width: 100vw;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
 }
 
 /* Sidebar */
@@ -296,19 +303,19 @@ body {
     background-color: var(--bg-tertiary);
 }
 
-table {
+.grid-container table {
     border-collapse: collapse;
     font-size: 0.75rem;
     min-width: max-content;
 }
 
-th, td {
+.grid-container th, .grid-container td {
     padding: 0.4rem 0.6rem;
     text-align: center;
     border: 1px solid var(--border);
 }
 
-th {
+.grid-container th {
     background-color: var(--bg-secondary);
     color: var(--text-secondary);
     font-weight: 600;
@@ -317,7 +324,7 @@ th {
     z-index: 2;
 }
 
-td:first-child, th:first-child {
+.grid-container td:first-child, .grid-container th:first-child {
     position: sticky;
     left: 0;
     background-color: var(--bg-secondary);
