@@ -2,9 +2,9 @@
 
 An interactive, high-performance web dashboard for visualizing NCEP Model Guidance (MAG) meteorological charts. Designed for meteorologists who need fast, seamless access to forecast imagery across multiple atmospheric levels and forecast hours.
 
-![Model guidance grid with the Region menu open, grouped into United States, North America & oceans, and World; the GFS 500 mb chart for Europe at +48 h; and the Status Log listing each chart loaded](docs/screenshot.png)
+![The Charts tab, first of five tabs along the top (Charts, Model Comparison, MOS, Soundings, Winter): the model guidance grid with the Region menu open, grouped into United States, North America & oceans, and World; the GFS 500 mb chart for Europe at +48 h; and the Status Log listing each chart loaded](docs/screenshot.png)
 
-*Hover over a cell in the grid to show that chart; here, the GFS 500 mb chart for Europe at +48 h. The Region menu (shown open) lists every region MAG plots for the selected model, and the Status Log at the bottom left lists each chart as it loads (drag its corner to make it taller).*
+*Hover over a cell in the grid to show that chart; here, the GFS 500 mb chart for Europe at +48 h. The Region menu (shown open) lists every region MAG plots for the selected model, and the Status Log at the bottom left lists each chart as it loads (drag its corner to make it taller). The tabs along the top open the [point forecasts](#-point-forecasts).*
 
 ## 🚀 Key Features
 
@@ -40,6 +40,10 @@ AIGFS's outer domains (Alaska, Arctic, India, the Pacific domains, American Samo
 ## 📍 Point Forecasts
 
 The tabs along the top go beyond the MAG charts to forecasts for one place. Type a ZIP or `City, ST` once and every tab uses it; it is remembered in your browser (default Jackson, MS). A tab loads its data only when you open it, and the address keeps the tab (for example `#winter`) so you can link to it.
+
+![The Model Comparison tab: 7-day temperature forecasts for Jackson, Mississippi from 11 models, with the run time of each model in the legend](docs/point-forecasts.png)
+
+*The Model Comparison tab, showing the 7-day temperature forecast for Jackson, MS. The Place box beside the tabs sets the location for all four point-forecast tabs.*
 
 | Tab | What it shows | Source |
 |---|---|---|
